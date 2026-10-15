@@ -17,6 +17,13 @@ const HOME_HTML = `<!DOCTYPE html>
   input { width: 100%; padding: 10px; box-sizing: border-box; font-size: 16px; }
   button { margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
   #out { margin-top: 16px; word-break: break-all; }
+  .result-box { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 12px; background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6px; }
+  .result-link { flex: 1; color: #0969da; text-decoration: none; word-break: break-all; font-size: 15px; }
+  .result-link:hover { text-decoration: underline; }
+  .copy-btn { margin: 0; padding: 4px; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #d0d7de; background: #fff; border-radius: 4px; color: #57606a; flex-shrink: 0; }
+  .copy-btn:hover { background: #eaeef2; color: #24292f; }
+  .tips { margin-top: 28px; padding-top: 16px; border-top: 1px solid #eee; font-size: 13px; color: #888; line-height: 1.8; }
+  .tips div { word-break: break-all; }
 </style>
 </head>
 <body>
@@ -24,7 +31,39 @@ const HOME_HTML = `<!DOCTYPE html>
   <input id="url" placeholder="粘贴 GitHub release / raw / clone 链接">
   <button id="go">生成加速链接</button>
   <div id="out"></div>
+
+  <div class="tips">
+    <div>分支源码：https://github.com/xxxx/project/archive/master.zip</div>
+    <div>release源码：https://github.com/xxx/project/archive/v1.0.0.tar.gz</div>
+    <div>release文件：https://github.com/xxx/project/releases/download/v1.0.0/release.zip</div>
+    <div>分支文件：https://github.com/xxxx/project/blob/master/filename</div>
+  </div>
+
   <script>
+    const COPY_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+    const CHECK_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2da44e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+    function copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise((resolve, reject) => {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          resolve();
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+
     document.getElementById('go').onclick = () => {
       const v = document.getElementById('url').value.trim();
       const out = document.getElementById('out');
@@ -33,8 +72,33 @@ const HOME_HTML = `<!DOCTYPE html>
         return;
       }
       const link = location.origin + '/' + v;
-      out.textContent = link;
-      navigator.clipboard && navigator.clipboard.writeText(link);
+      copyText(link);
+
+      out.innerHTML = '';
+      
+      const box = document.createElement('div');
+      box.className = 'result-box';
+      const a = document.createElement('a');
+      a.className = 'result-link';
+      a.href = link;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = link;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'copy-btn';
+      btn.title = '复制链接';
+      btn.innerHTML = COPY_ICON;
+      btn.onclick = () => {
+        copyText(link).then(() => {
+          btn.innerHTML = CHECK_ICON;
+          setTimeout(() => { btn.innerHTML = COPY_ICON; }, 1500);
+        });
+      };
+
+      box.appendChild(a);
+      box.appendChild(btn);
+      out.appendChild(box);
     };
   </script>
 </body>
